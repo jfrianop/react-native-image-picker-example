@@ -1,17 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, Button, Image } from 'react-native';
+import { StyleSheet, Text, View, Button, Image, FlatList } from 'react-native';
 import * as Permissions from 'expo-permissions';
 import { Camera } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 
 export default function App() {
   const [cameraPermission, setCameraPermission] = useState('denied');
-  const [image, setImage] = useState(null);
+  const [images, setImages] = useState([]);
 
   useEffect(() => {
-    Permissions.askAsync(Permissions.CAMERA_ROLL)
-      .then(({ status }) => setCameraPermission(status));
-  }, []);
+    console.log(images)
+    if (cameraPermission === 'denied') {
+      Permissions.askAsync(Permissions.CAMERA_ROLL)
+        .then(({ status }) => setCameraPermission(status));
+    }
+  }, [images]);
 
   pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -19,8 +22,9 @@ export default function App() {
       allowsEditing: true,
       aspect: [4, 3],
     });
-
-    setImage(result);
+    result.key = `${result.uri}_${images.length}`;
+    const newImages = [...images, result]
+    setImages(newImages);
   };
 
   takePicture = async () => {
@@ -29,8 +33,9 @@ export default function App() {
       allowsEditing: true,
       aspect: [4, 3],
     });
-
-    setImage(result);
+    result.key = `${result.uri}_${images.length}`;
+    const newImages = [...images, result]
+    setImages(newImages);
   }
 
   if (cameraPermission === 'denied') return (
@@ -41,20 +46,30 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <Button
-        title="abrir fotos"
-        onPress={pickImage}
-      />
-      <Button
-        title="abrir camara"
-        onPress={takePicture}
-      />
-      {image && (
-        <Image
-          style={{ height: 250, width: 250 }}
-          source={{ uri: image.uri }}
+      <View >
+        {images.length <= 0 ?
+          <Text>Agrega una foto...</Text> :
+          <View style={styles.imageContainer}>
+            {images.map(image => (
+              <Image
+                style={{ height: 100, width: 100, margin: 5 }}
+                source={{ uri: image.uri }}
+                key={image.key}
+              />
+            ))}
+          </View>
+        }
+      </View>
+      <View style={styles.buttonContainer} >
+        <Button
+          title="abrir fotos"
+          onPress={pickImage}
         />
-      )}
+        <Button
+          title="abrir camara"
+          onPress={takePicture}
+        />
+      </View>
     </View>
   );
 }
@@ -62,8 +77,19 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    justifyContent: 'space-between',
     backgroundColor: '#fff',
     padding: 20,
     paddingTop: 50,
   },
+  imageContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    flexWrap: 'wrap',
+    padding: 20,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: "space-between"
+  }
 });
